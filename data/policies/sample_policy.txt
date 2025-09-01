@@ -1,0 +1,6 @@
+ACME Leave Policy v1.2
+Section 1: Eligibility
+Employees are eligible for leave after 3 months of employment.
+
+Section 2: Paid Time Off
+Full-time employees receive 15 days PTO per year.

@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   vectordb:
     image: qdrant/qdrant:latest
@@ -17,8 +19,8 @@ services:
     image: grafana/grafana:latest
     ports: ["3000:3000"]
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
 
   vllm:
     image: vllm/vllm-openai:latest
@@ -40,15 +42,21 @@ services:
       - "4"
     env_file: [.env]
     environment:
-      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN}
-      - HF_HOME=/root/.cache/huggingface
-      - VLLM_ATTENTION_BACKEND=FLASHINFER
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN}
+      HF_HOME: /root/.cache/huggingface
+      VLLM_ATTENTION_BACKEND: FLASHINFER
     ports: ["8000:8000"]
     deploy:
       resources:
         reservations:
           devices:
             - capabilities: ["gpu"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/v1/models"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
 
   gateway:
@@ -56,18 +64,57 @@ services:
     build: ./services/gateway
     env_file: [.env]
     ports: ["8080:8080"]
-    depends_on: [vllm, vectordb, redis]
+    environment:
+      RETRIEVER_URL: http://retriever:9000
+      VLLM_URL: http://vllm:8000
+      RERANK_MIN_SCORE: "0"
+      RERANK_TOP_K_POST: "1"
+      RETRIEVER_TOP_K: "8"
+    depends_on:
+      vllm:
+        condition: service_healthy
+      retriever:
+        condition: service_started
+      reranker:
+        condition: service_healthy
+      vectordb:
+        condition: service_started
+      redis:
+        condition: service_started
 
   retriever:
-    image: ghcr.io/placeholder/retriever:dev
     build: ./services/retriever
+    image: agentic-policy-qa-retriever:latest
     env_file: [.env]
+    environment:
+      QDRANT_URL: http://vectordb:6333
+      COLLECTION: policies
+      EMBED_MODEL: sentence-transformers/all-MiniLM-L6-v2
+      TOP_K: "5"
+      RERANKER_MODEL: cross-encoder/ms-marco-MiniLM-L-6-v2
+      RERANK_OVERFETCH: "20"
+      EF_SEARCH: "512"
+    depends_on: [vectordb]
     ports: ["9000:9000"]
-    depends_on: [vectordb, redis]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
-  agents:
-    image: ghcr.io/placeholder/agents:dev
-    build: ./services/agents
+  reranker:
+    build: ./services/reranker
     env_file: [.env]
     ports: ["9100:9100"]
-    depends_on: [retriever, vllm]
+    depends_on: [retriever]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9100/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  agents:
+    build: ./services/agents
+    profiles: ["agents"]

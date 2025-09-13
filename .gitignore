@@ -9,3 +9,12 @@
 .env
 .venv/
 __pycache__/
+
+# Docker runtime
+volumes/
+data/
+logs/
+tmp/
+*.log
+*.pid
+docker-compose.override.yml

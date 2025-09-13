@@ -1,24 +1,19 @@
-Agentic Policy Q&A (High-Trust RAG)GoalsAnswer policy/compliance questions with citations and self-verification.Demonstrate end-to-end skills: retrieval, generation, agents, observability.SLOsHallucination < 2% (RAGAS faithfulness ≥ 0.98 over 200 Qs)p95 latency ≤ 1200 msUptime 99.5% (gateway)Architectureflowchart LR
-  U[User/UI] <--> |SSE| GW[FastAPI Gateway]
-  subgraph RET [Retrieval]
-    ENC[Encoder]
-    VEC[Vector DB]
-    RER[Cross-Encoder Reranker]
-  end
-  subgraph GEN [Generation]
-    VLLM[vLLM Server]
-  end
-  subgraph AG [Agents]
-    RETA[Retrieve]
-    DRAFT[Draft]
-    CITE[Citation]
-    VERIFY[Verify]
-  end
-  subgraph OBS [Observability]
-    PROM[Prometheus]
-    OTL[OpenTelemetry]
-    GRA[Grafana]
-  end
-  GW --> RETA --> ENC --> VEC --> RER --> DRAFT --> VLLM --> CITE --> VERIFY --> GW
-  GW --> PROM
-  GW --> OTL
+# Agentic Policy Q&A (High-Trust RAG)
+
+## Overview
+FastAPI Gateway orchestrates Retrieval → Rerank → vLLM generation with citations. Qdrant stores vectors. Cross-encoder reranks. Metrics via Prometheus.
+
+## Endpoints
+- `GET /health` and `/ready` on gateway, retriever, reranker
+- `POST /chat` on gateway
+
+## Quickstart (Docker)
+```bash
+cp .env.example .env
+# edit .env locally. keep tokens empty or local only
+docker compose up -d --build
+# wait for services, then:
+curl -s "http://localhost:8080/ready"
+python scripts/ingest.py  # one-time sample ingest
+curl -s -X POST http://localhost:8080/chat -H "Content-Type: application/json" \
+  -d '{"query":"What is the refund policy?","stream":false}'

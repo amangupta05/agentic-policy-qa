@@ -164,15 +164,7 @@ Covers:
 
 ---
 
-## 📸 Demo Screenshots
 
-### Query Example
-
-![Demo Query](docs/images/demo-query.png)
-
-### Grafana Metrics
-
-![Grafana Dashboard](docs/images/grafana-dashboard.png)
 
 ---
 

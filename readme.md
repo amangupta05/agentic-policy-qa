@@ -125,16 +125,7 @@ curl -N "http://localhost:8080/chat/stream?q=What+is+the+refund+policy"
 
 ---
 
-## 📊 Observability
 
-* **Prometheus** → [http://localhost:9090](http://localhost:9090)
-* **Grafana** → [http://localhost:3000](http://localhost:3000)
-* Key metrics:
-
-  * `gateway_latency_ms`
-  * `retrieval_latency_ms`
-  * `verifier_pass_rate`
-  * `hallucination_rate`
 
 ---
 
@@ -188,3 +179,4 @@ Covers:
 ## 📜 License
 
 This project is licensed under the [MIT License](LICENSE).
+
